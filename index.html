@@ -1,0 +1,3470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taksimul Hasan Dip</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Mukta Malar', 'Chalkboard SE', 'Comic Neue', cursive;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #2d3748;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #gameBackground {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+            cursor: crosshair;
+        }
+
+        .game-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sky {
+            background: linear-gradient(to bottom, #5C94FC 0%, #7DCFFF 100%);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: all 1s ease;
+        }
+
+        .sky.night-mode {
+            background: linear-gradient(to bottom, #000428 0%, #004e92 100%);
+        }
+
+        .sky.night-mode .retro-sun {
+            background: #f5f5f5;
+            border-color: #d3d3d3;
+            box-shadow: 0 0 30px rgba(245, 245, 245, 0.6);
+            animation: moonPulse 3s infinite;
+        }
+
+        @keyframes moonPulse {
+            0%, 100% { 
+                transform: scale(1); 
+                box-shadow: 0 0 30px rgba(245, 245, 245, 0.6);
+            }
+            50% { 
+                transform: scale(1.05); 
+                box-shadow: 0 0 40px rgba(245, 245, 245, 0.8);
+            }
+        }
+
+        .sky.night-mode .cloud {
+            background: #2c3e50;
+            opacity: 0.7;
+        }
+
+        /* Continuous ground blocks */
+        .ground-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .ground-strip {
+            position: absolute;
+            height: 40px;
+            image-rendering: pixelated;
+            transition: all 0.2s;
+            display: flex;
+        }
+
+        .dirt-strip {
+            background: repeating-linear-gradient(
+                45deg,
+                #228B22,
+                #228B22 10px,
+                #228B22 10px,
+                #228B22 20px
+            );
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            box-shadow: inset -2px -2px 0 rgba(0,0,0,0.3);
+        }
+
+        .stone-strip {
+            background: repeating-linear-gradient(
+                90deg,
+                #696969,
+                #696969 2px,
+                #808080 2px,
+                #808080 4px
+            );
+            border: 2px solid #000;
+            box-shadow: inset -2px -2px 0 rgba(0,0,0,0.3);
+        }
+
+        /* Grass strip */
+        .grass-strip {
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 35px,
+                    #228B22 35px,
+                    #228B22 40px
+                ),
+                repeating-linear-gradient(
+                    45deg,
+                    #32CD32,
+                    #32CD32 10px,
+                    #228B22 10px,
+                    #228B22 20px
+                ),
+                repeating-linear-gradient(
+                    45deg,
+                    #8B4513,
+                    #8B4513 2px,
+                    #654321 2px,
+                    #654321 4px
+            );
+            border: 2px solid #000;
+            box-shadow: inset -2px -2px 0 rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grass-strip::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 15px,
+                    rgba(34, 139, 34, 0.7) 15px,
+                    rgba(34, 139, 34, 0.7) 20px
+                ),
+                radial-gradient(
+                    circle at 10% 20%,
+                    rgba(50, 205, 50, 0.6) 0px,
+                    transparent 8px
+                ),
+                radial-gradient(
+                    circle at 40% 30%,
+                    rgba(50, 205, 50, 0.6) 0px,
+                    transparent 6px
+                ),
+                radial-gradient(
+                    circle at 70% 25%,
+                    rgba(50, 205, 50, 0.6) 0px,
+                    transparent 7px
+                ),
+                radial-gradient(
+                    circle at 90% 35%,
+                    rgba(50, 205, 50, 0.6) 0px,
+                    transparent 5px
+                );
+            pointer-events: none;
+        }
+
+        /* Platform blocks */
+        .platform-strip {
+            position: absolute;
+            height: 40px;
+            display: flex;
+            border: 2px solid #000;
+            box-shadow: inset -2px -2px 0 rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+
+        .stone-platform {
+            background: repeating-linear-gradient(
+                90deg,
+                #696969,
+                #696969 40px,
+                #808080 40px,
+                #808080 80px
+            );
+        }
+
+        .dirt-platform {
+            background: repeating-linear-gradient(
+                45deg,
+                #8B4513,
+                #8B4513 40px,
+                #654321 40px,
+                #654321 80px
+            );
+        }
+
+        /* Hover effects */
+        .pixel-block:hover,
+        .platform-strip:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.3);
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .platform-strip:hover {
+            animation: platformBounce 0.3s ease;
+        }
+
+        @keyframes platformBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .breaking {
+            animation: blockBreak 0.3s;
+        }
+
+        @keyframes blockBreak {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2) rotate(10deg); }
+            100% { transform: scale(0) rotate(45deg); opacity: 0; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            pointer-events: none;
+            animation: particleFloat 0.8s ease-out forwards;
+        }
+
+        @keyframes particleFloat {
+            0% { 
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% { 
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
+        }
+
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50px;
+            opacity: 0.9;
+            animation: float 25s infinite linear;
+            image-rendering: pixelated;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+            transition: all 1s ease;
+        }
+
+        @keyframes float {
+            from { transform: translateX(-200px); }
+            to { transform: translateX(calc(100vw + 200px)); }
+        }
+
+        .retro-sun {
+            position: absolute;
+            top: 10%;
+            right: 15%;
+            width: 80px;
+            height: 80px;
+            background: #FFD700;
+            border-radius: 50%;
+            border: 3px solid #FFA500;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+            animation: pulse 3s infinite;
+            transition: all 1s ease;
+        }
+        /* Day-mode: make the whole Space Cleaner comic box use the requested style */
+        body:not(.night-mode) .game-container .game-profile {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%) !important;
+            padding: 2rem !important;
+            margin: 1.5rem 0 !important;
+            border: 4px solid #000 !important;
+            border-radius: 15px !important;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.3) !important;
+            transition: all 0.3s !important;
+            cursor: pointer !important;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .pixel-character {
+            position: absolute;
+            bottom: 80px;
+            left: -40px;
+            width: 40px;
+            height: 60px;
+            animation: characterWalk 10s infinite ease-in-out;
+            image-rendering: pixelated;
+            z-index: 100;
+            cursor: pointer;
+        }
+
+        @keyframes characterWalk {
+            0% { 
+                left: -40px;
+                bottom: 80px;
+                transform: scaleX(1);
+                opacity: 0;
+            }
+            2% {
+                left: 5%; 
+                bottom: 80px;
+                opacity: 1;
+                animation-timing-function: ease-out;
+            }
+            5% { 
+                left: 8%; 
+                bottom: 225px;
+            }
+            8% { 
+                left: 12%; 
+                bottom: 80px;
+            }
+            12% {
+                left: 18%;
+                bottom: 80px;
+            }
+            16% {
+                left: 22%;
+                bottom: 265px;
+            }
+            20% {
+                left: 28%;
+                bottom: 80px;
+            }
+            25% {
+                left: 35%;
+                bottom: 195px;
+            }
+            30% {
+                left: 42%;
+                bottom: 80px;
+            }
+            38% {
+                left: 55%;
+                bottom: 80px;
+            }
+            45% {
+                left: 65%;
+                bottom: 225px;
+            }
+            50% {
+                left: 75%;
+                bottom: 80px;
+            }
+            60% {
+                left: 85%;
+                bottom: 80px;
+                transform: scaleX(1);
+                opacity: 1;
+            }
+            65% {
+                left: 92%;
+                bottom: 80px;
+                opacity: 1;
+                animation-timing-function: ease-in;
+            }
+            70% {
+                left: 98%;
+                bottom: 80px;
+                opacity: 0;
+                transform: scaleX(1);
+            }
+            72% {
+                left: calc(100vw + 40px);
+                bottom: 80px;
+                opacity: 0;
+            }
+            73% {
+                left: -40px;
+                bottom: 80px;
+                opacity: 0;
+                transform: scaleX(1);
+            }
+            75% {
+                left: -40px;
+                bottom: 80px;
+                opacity: 0;
+            }
+            78% {
+                left: 5%;
+                bottom: 80px;
+                opacity: 1;
+            }
+            100% { 
+                left: 5%; 
+                bottom: 80px;
+                transform: scaleX(1);
+                opacity: 1;
+            }
+        }
+
+        .char-head {
+            width: 30px;
+            height: 30px;
+            background: #FFD700;
+            border: 2px solid #000;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .char-eyes {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #000;
+            top: 12px;
+            left: 8px;
+        }
+
+        .char-eyes::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #000;
+            left: 10px;
+        }
+
+        .char-body {
+            width: 25px;
+            height: 20px;
+            background: #4169E1;
+            border: 2px solid #000;
+            margin: 2px auto;
+        }
+
+        .char-legs {
+            display: flex;
+            justify-content: space-around;
+            width: 25px;
+            margin: 0 auto;
+        }
+
+        .leg {
+            width: 8px;
+            height: 15px;
+            background: #2F4F4F;
+            border: 2px solid #000;
+            animation: legWalk 0.4s infinite;
+        }
+
+        .leg:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes legWalk {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg); 
+            }
+            25% { 
+                transform: translateY(-4px) rotate(5deg); 
+            }
+            50% { 
+                transform: translateY(0) rotate(0deg); 
+            }
+            75% { 
+                transform: translateY(-4px) rotate(-5deg); 
+            }
+        }
+
+        @keyframes poofEffect {
+            0% { 
+                transform: scale(1); 
+                opacity: 1;
+                filter: blur(0px);
+            }
+            50% { 
+                transform: scale(1.2); 
+                opacity: 0.5;
+                filter: blur(2px);
+            }
+            100% { 
+                transform: scale(0); 
+                opacity: 0;
+                filter: blur(4px);
+            }
+        }
+
+        @keyframes appearEffect {
+            0% { 
+                transform: scale(0); 
+                opacity: 0;
+                filter: blur(4px);
+            }
+            50% { 
+                transform: scale(1.2); 
+                opacity: 0.5;
+                filter: blur(2px);
+            }
+            100% { 
+                transform: scale(1); 
+                opacity: 1;
+                filter: blur(0px);
+            }
+        }
+
+        .vanishing {
+            animation: poofEffect 0.5s ease-out forwards !important;
+        }
+
+        .appearing {
+            animation: appearEffect 0.5s ease-out forwards !important;
+        }
+
+        #themeToggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 12px 24px;
+            background: #000;
+            color: #fff;
+            border: 4px solid #fff;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 4px 4px 0 rgba(255,255,255,0.3);
+            transition: all 0.3s;
+        }
+
+        #themeToggle:hover {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+        }
+
+        #musicToggle {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 1000;
+            padding: 12px;
+            background: #000;
+            color: #fff;
+            border: 4px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 4px 4px 0 rgba(255,255,255,0.3);
+            transition: all 0.3s;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        #musicToggle:hover {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+            transform: scale(1.1);
+        }
+
+        #musicToggle.muted {
+            opacity: 0.7;
+            background: #666;
+        }
+
+        #musicToggle.muted:hover {
+            background: #888;
+            color: #fff;
+        }
+
+        .music-visualizer {
+            position: fixed;
+            bottom: 150px;
+            right: 20px;
+            width: 60px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            z-index: 999;
+        }
+
+        .music-bar {
+            width: 4px;
+            background: #00ffff;
+            border-radius: 2px;
+            animation: musicPulse 0.8s infinite ease-in-out;
+        }
+
+        .music-bar:nth-child(1) { animation-delay: 0s; height: 8px; }
+        .music-bar:nth-child(2) { animation-delay: 0.1s; height: 12px; }
+        .music-bar:nth-child(3) { animation-delay: 0.2s; height: 16px; }
+        .music-bar:nth-child(4) { animation-delay: 0.3s; height: 12px; }
+        .music-bar:nth-child(5) { animation-delay: 0.4s; height: 8px; }
+
+        @keyframes musicPulse {
+            0%, 100% { transform: scaleY(0.8); opacity: 0.6; }
+            50% { transform: scaleY(1.2); opacity: 1; }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+            color: white;
+            padding: 15px 25px;
+            border: 4px solid #000;
+            border-radius: 15px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.3);
+            animation: slideIn 0.5s ease-out;
+            display: none;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .comic-border {
+            border: 4px solid #000;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
+        }
+
+        header {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #006eff;
+            text-shadow: 4px 4px 0 #f57cc700;
+            transform: rotate(-2deg);
+            display: inline-block;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: rotate(-2deg) translateY(0); }
+            50% { transform: rotate(-2deg) translateY(-10px); }
+        }
+
+        .tagline {
+            font-size: 1.5rem;
+            color: #ff6b6b;
+            text-shadow: 2px 2px 0 #fff;
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+
+       nav {
+    background: linear-gradient(135deg, rgba(92, 148, 252, 0.8) 0%, rgba(125, 207, 255, 0.8) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+        .nav-btn {
+            background: linear-gradient(135deg, #ffd900 0%, #f7a800 100%);
+            color: #000000;
+            padding: 0.8rem 2rem;
+            border: 4px solid #000;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+        }
+
+        .nav-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+            background: linear-gradient(135deg, #00ff37 0%, #00ffb3 100%);
+            
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .section {
+            background: #fff;
+            margin: 2rem 0;
+            padding: 2rem;
+            border-radius: 20px;
+            position: relative;
+            animation: sectionSlideIn 0.6s ease-out;
+        }
+
+        @keyframes sectionSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            color: #000000;
+            text-shadow: 3px 3px 0 #00ffff;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            background: #ffd700;
+            padding: 0.5rem 1rem;
+            border: 4px solid #000;
+            transform: rotate(-1deg);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        h2:hover {
+            transform: rotate(2deg) scale(1.05);
+            background: #ffed4e;
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
+            color: #ff00ff;
+            text-shadow: 2px 2px 0 #00ffff;
+            border-color: #ff00ff;
+        }
+
+        /* About Me Section */
+        .about-container {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+            margin-top: 1.5rem;
+        }
+
+        .profile-section {
+            flex: 0 0 280px;
+            text-align: center;
+        }
+
+        .profile-photo {
+            width: 250px;
+            height: 250px;
+            border-radius: 20px;
+            border: 6px solid #000;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
+            background: rgb(0, 0, 0);
+            margin: 0 auto 1rem;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .profile-photo:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 15px 15px 0 rgba(0,0,0,0.3);
+            border-color: #ff00ff;
+        }
+
+        .profile-photo:hover::before {
+            content: "✨";
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+            z-index: 2;
+        }
+
+        .profile-photo:hover::after {
+            content: "🎮";
+            position: absolute;
+            bottom: -20px;
+            right: -20px;
+            font-size: 2rem;
+            animation: bounce 1s infinite;
+            z-index: 2;
+        }
+
+        .profile-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 14px;
+            transition: all 0.4s ease;
+            background: #000000;
+        }
+
+        .profile-photo:hover img {
+            transform: scale(1.05);
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .profile-info {
+            margin-top: 1rem;
+            position: relative;
+        }
+
+        .profile-name {
+            font-size: 2rem;
+            color: #000000;
+            text-shadow: 2px 2px 0 rgba(229, 255, 0, 0);
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .profile-title {
+            font-size: 1.5rem;
+            color: #000000;
+            text-shadow: 1px 1px 0 #00ffff;
+            border-color: #ff00ff;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            padding: 0.5rem 1rem;
+            border: 3px solid #000;
+            border-radius: 10px;
+            display: inline-block;
+            transform: rotate(-1deg);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-title:hover {
+            transform: rotate(2deg) scale(1.1);
+            background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
+            color: #ff00ff;
+            text-shadow: 2px 2px 0 #00ffff;
+            border-color: #ff00ff;
+        }
+
+        .profile-title:hover::before {
+            content: "🌟";
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            font-size: 1.5rem;
+            animation: twinkle 0.8s infinite;
+        }
+
+        .profile-title:hover::after {
+            content: "🎮";
+            position: absolute;
+            bottom: -15px;
+            right: -15px;
+            font-size: 1.5rem;
+            animation: bounce 0.8s infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { transform: scale(1) rotate(2deg); }
+            50% { transform: scale(1.05) rotate(3deg); }
+        }
+
+        .profile-title:hover {
+            animation: titlePulse 1s infinite;
+        }
+
+        .about-text {
+            flex: 1;
+        }
+
+        /* Social Media Icons */
+        .social-media-section {
+            margin-top: 0.5rem;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .social-link {
+            text-decoration: none;
+            transition: all 0.3s;
+            display: inline-block;
+        }
+
+        .social-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .social-icon:hover {
+            transform: scale(1.15) rotate(5deg) !important;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.4) !important;
+            animation: iconPulse 0.5s ease-in-out;
+        }
+
+        @keyframes iconPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1.15); }
+        }
+
+        .skill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .skill-card {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 1.5rem;
+            border: 4px solid #000;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s;
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.3);
+        }
+
+        .skill-card:hover {
+            transform: scale(1.1) rotate(3deg);
+            color: #ff00ff;
+            text-shadow: 2px 2px 0 #00ffff;
+            border-color: #ff00ff;
+            
+        }
+
+        .skill-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            
+        }
+
+        .skill-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .project-card {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 2rem;
+            margin: 1.5rem 0;
+            border: 4px solid #000;
+            border-radius: 15px;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 10px 10px 0 rgba(0,0,0,0.3);
+            color: #000000;
+            
+            border-color: #ff00ff;
+        }
+
+        .project-title {
+            font-size: 2rem;
+            color: #ff6b6b;
+            text-shadow: 2px 2px 0 #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        .power-up-btn {
+            background: linear-gradient(135deg, #00ff00 0%, #00cc00 100%);
+            color: #000;
+            padding: 1rem 2rem;
+            border: 4px solid #000;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1rem;
+            display: inline-block;
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .power-up-btn:hover {
+            background: linear-gradient(135deg, #ffff00 0%, #ffcc00 100%);
+            transform: scale(1.05);
+        }
+
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-input {
+            padding: 1rem;
+            font-size: 1.1rem;
+            border: 4px solid #000;
+            border-radius: 10px;
+            font-family: 'Comic Sans MS', cursive;
+        }
+
+        .speech-bubble {
+            background: #fff;
+            border: 4px solid #000;
+            border-radius: 20px;
+            padding: 1rem;
+            position: relative;
+            margin: 1rem 0;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+        }
+
+        .speech-bubble::before {
+            content: "";
+            position: absolute;
+            bottom: -20px;
+            left: 30px;
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 20px solid #000;
+        }
+
+        .speech-bubble::after {
+            content: "";
+            position: absolute;
+            bottom: -13px;
+            left: 33px;
+            width: 0;
+            height: 0;
+            border-left: 17px solid transparent;
+            border-right: 17px solid transparent;
+            border-top: 17px solid #fff;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+            margin: 10% auto;
+            padding: 2rem;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 20px;
+            border: 4px solid #000;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 2rem;
+            color: #000;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close:hover {
+            color: #ff0000;
+        }
+
+        footer {
+            background: #000;
+            color: #fff;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        /* ===== SPACE CLEANER ENHANCEMENTS ===== */
+        .game-profile {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 2rem;
+            margin: 1.5rem 0;
+            border: 4px solid #000;
+            border-radius: 15px;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            cursor: pointer;
+            width: 100%;
+            max-width: 1200px;
+            box-sizing: border-box;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .game-profile:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 
+                0 0 30px rgba(255, 251, 0, 0.5),
+                0 20px 40px rgba(0, 0, 0, 0.3) !important;
+            border-color: #00ffff !important;
+        }
+
+        .game-profile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(217, 255, 0, 0.1),
+                transparent
+            );
+            transition: left 0.7s;
+        }
+
+        .game-profile:hover::before {
+            left: 100%;
+        }
+
+        /* Game video/thumbnail hover effect */
+        .game-media {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .game-media iframe,
+        .game-media video {
+            transition: all 0.4s ease;
+        }
+
+        .game-profile:hover .game-media iframe,
+        .game-profile:hover .game-media video {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.7) !important;
+        }
+
+        /* Trailer label hover effect */
+        .game-media .trailer-label {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            z-index: 2;
+            border: 1px solid transparent;
+        }
+
+        .game-profile:hover .game-media .trailer-label {
+            background: rgba(0, 255, 255, 0.9);
+            color: #000;
+            border-color: #000;
+            transform: scale(1.1);
+        }
+
+        /* Game features cards hover */
+        .game-profile:hover .game-features > div {
+            border-color: #ff00ff !important;
+            transform: translateY(-2px);
+        }
+
+        /* Quick controls hover effect */
+        .game-profile:hover .quick-controls {
+            border-color: #ff00ff !important;
+            background: rgba(0, 0, 0, 0.7) !important;
+        }
+
+        .game-profile:hover .quick-controls span[style*="color: #00ffff"] {
+            color: #ff00ff !important;
+            text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+        }
+
+        /* Play buttons hover effects */
+        .game-profile .power-up-btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease !important;
+        }
+
+        .game-profile .power-up-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: left 0.5s;
+        }
+
+        .game-profile .power-up-btn:hover::after {
+            left: 100%;
+        }
+
+        .game-profile .power-up-btn:hover {
+            transform: scale(1.1) !important;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.7),
+                4px 4px 0 rgba(0, 0, 0, 0.4) !important;
+        }
+
+        /* ===== GAME STATS BUTTON STYLING ===== */
+        .game-stats-container {
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .game-stats-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: linear-gradient(135deg, #000428 0%, #004e92 100%);
+            color: #fff;
+            padding: 1rem 2rem;
+            border: 3px solid #00ffff;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        .game-stats-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 
+                0 10px 25px rgba(0, 255, 255, 0.4),
+                6px 6px 0 rgba(0, 0, 0, 0.3);
+            border-color: #ff00ff;
+            background: linear-gradient(135deg, #004e92 0%, #000428 100%);
+        }
+
+        .game-stats-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.1),
+                transparent
+            );
+            transition: left 0.6s;
+        }
+
+        .game-stats-btn:hover::before {
+            left: 100%;
+        }
+
+        /* Stats popup display */
+        .game-stats-popup {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 3px solid #00ffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            width: 300px;
+            margin-bottom: 1rem;
+            animation: statsPopup 0.3s ease-out;
+        }
+
+        @keyframes statsPopup {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .game-stats-popup::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid #00ffff;
+        }
+
+        .game-stats-popup.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 0.8rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ffff;
+            margin: 0.5rem 0;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #fff;
+            opacity: 0.8;
+        }
+
+        /* Badge for high play count */
+        .play-count-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff00ff;
+            color: #000;
+            font-size: 0.8rem;
+            font-weight: bold;
+            padding: 0.3rem 0.6rem;
+            border-radius: 10px;
+            border: 2px solid #000;
+            animation: badgePulse 2s infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Night mode styles... (keep existing night mode styles) */
+        body.night-mode {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%);
+        }
+
+        body.night-mode header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body.night-mode header h1 {
+            color: #f57cc6;
+            text-shadow: 4px 4px 0 #006eff;
+        }
+
+        body.night-mode header .tagline {
+            color: #418ae9;
+            text-shadow: 1px 1px 0 #fff;
+        }
+
+        body.night-mode .section {
+            background: #000 !important;
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+
+        body.night-mode .section h2 {
+            background: #333 !important;
+            color: #00ffff !important;
+            text-shadow: 3px 3px 0 #ff00ff !important;
+            border-color: #fff !important;
+        }
+
+        body.night-mode .section h2:hover {
+            background: #444 !important;
+            color: #00ffff !important;
+        }
+
+        body.night-mode #about .profile-name {
+            color: #00ffff !important;
+            text-shadow: 2px 2px 0 #ff00ff !important;
+        }
+
+        body.night-mode #about .profile-title {
+            background: linear-gradient(135deg, #333 0%, #555 100%) !important;
+            color: #00ffff !important;
+            text-shadow: 1px 1px 0 #ff00ff !important;
+            border-color: #fff !important;
+        }
+
+        body.night-mode #about .profile-title:hover {
+            background: linear-gradient(135deg, #555 0%, #333 100%) !important;
+        }
+
+        body.night-mode .speech-bubble {
+            background: #222 !important;
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+
+        body.night-mode .speech-bubble::before {
+            border-top-color: #fff !important;
+        }
+
+        body.night-mode .speech-bubble::after {
+            border-top-color: #222 !important;
+        }
+
+        body.night-mode .skill-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a235a 100%) !important;
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+
+        body.night-mode .skill-name {
+            color: #fff !important;
+        }
+
+        body.night-mode .project-card {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+
+        body.night-mode .project-title {
+            color: #00ffff !important;
+            text-shadow: 2px 2px 0 #ff00ff !important;
+        }
+
+        body.night-mode .form-input {
+            background: #222 !important;
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+
+        body.night-mode .form-input::placeholder {
+            color: #aaa !important;
+        }
+
+        body.night-mode footer {
+            background: #111 !important;
+            color: #fff !important;
+        }
+
+        body.night-mode .modal-content {
+            background: linear-gradient(135deg, #222 0%, #333 100%) !important;
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+
+        body.night-mode .close {
+            color: #fff !important;
+        }
+
+        body.night-mode .close:hover {
+            color: #ff0000 !important;
+        }
+
+        body.night-mode .section,
+        body.night-mode .section p,
+        body.night-mode .section li,
+        body.night-mode .section span:not(.close) {
+            color: #fff !important;
+        }
+
+        body.night-mode .project-card[data-project] {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+        }
+
+        body.night-mode .story-synopsis {
+            background: #333 !important;
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+        
+        body.night-mode .lore-section {
+            background: #333 !important;
+            border-color: #fff !important;
+            color: #fff !important;
+        }
+        
+        body.night-mode .project-media h4 {
+            color: #fff !important;
+        }
+        body.night-mode .project-links h4 {
+            color: #fff !important;
+        }
+        body.night-mode .mads-project h3 {
+            color: #fff !important;
+        }
+        body.night-mode .mads-project h4 {
+            color: #fff !important;
+        }
+        body.night-mode .mads-project p {
+            color: #fff !important;
+        }
+        body.night-mode .mads-project li {
+            color: #fff !important;
+        }
+        body.night-mode .mads-project td {
+            color: #ffffff !important;
+        }
+        body.night-mode .mads-project tr {
+            background-color: #333 !important;
+        }
+
+        body.night-mode .character-details{
+            background: #333 !important;
+        }
+
+        
+
+        body.night-mode #themeToggle {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+        }
+
+        body.night-mode #themeToggle:hover {
+            background: #000;
+            color: #fff;
+            border-color: #fff;
+        }
+
+        body.night-mode #musicToggle {
+            background: #000000;
+            color: #000;
+            border-color: #ffffff;
+        }
+
+        body.night-mode #musicToggle:hover {
+            background: #ffffff;
+            color: #000000;
+            border-color: #fff;
+        }
+
+        body.night-mode #musicToggle.muted {
+            background: #666;
+            color: #fff;
+        }
+
+        body.night-mode #musicToggle.muted:hover {
+            background: #888;
+            color: #fff;
+        }
+
+        body.night-mode nav {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body.night-mode .nav-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #fff;
+        }
+
+        body.night-mode .nav-btn:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+
+        body.night-mode .mads-project td.mads-value {
+            color: #ffffff !important;
+        }
+
+        body.night-mode .mads-project .roles-grid .role-card {
+            background: #333 !important;
+            border-color: #fff !important;
+            box-shadow: none !important;
+        }
+
+        body.night-mode .mads-project .roles-grid .role-card h4,
+        body.night-mode .mads-project .roles-grid .role-card p {
+            color: #fff !important;
+        }
+
+        /* Gameplay cards inside The MADS — ensure readable dark mode backgrounds */
+        /* Target the card elements inside the grid only (avoid overriding game-mode gradients) */
+        body.night-mode .mads-project .gameplay-section > div[style*="display: grid"] > div {
+            background: #333 !important;
+            border-color: #fff !important;
+            color: #fff !important;
+            box-shadow: none !important;
+        }
+
+        body.night-mode .mads-project .gameplay-section > div[style*="display: grid"] > div h4 {
+            color: #ffd700 !important;
+        }
+
+        body.night-mode .mads-project .gameplay-section > div[style*="display: grid"] > div ul,
+        body.night-mode .mads-project .gameplay-section > div[style*="display: grid"] > div ul li {
+            color: #fff !important;
+        }
+
+        body.night-mode .social-icon {
+            border-color: #fff !important;
+        }
+        
+        body.night-mode .mads-bgm-btn {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+        }
+
+        body.night-mode .mads-bgm-btn:hover {
+            background: #000;
+            color: #fff;
+            border-color: #fff;
+        }
+
+        #gameModal .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+            color: #fff !important;
+            border-color: #00ffff !important;
+        }
+
+        #gameModal h2 {
+            color: #00ffff !important;
+            text-shadow: 2px 2px 0 #ff00ff !important;
+        }
+
+        body.night-mode #game {
+            background: linear-gradient(135deg, #000428 0%, #004e92 100%) !important;
+        }
+
+        body.night-mode #game h2 {
+            background: linear-gradient(135deg, #00ffff 0%, #ff00ff 100%) !important;
+            color: #000 !important;
+            border-color: #000 !important;
+        }
+
+        /* Night mode: restore the original dark gradient for the game card */
+        body.night-mode .game-profile,
+        body.night-mode .game-container .game-profile {
+            background: linear-gradient(135deg, #000428 0%, #004e92 100%) !important;
+        }
+
+        /* Game title color: black in day mode, cyan in night mode */
+        body:not(.night-mode) .game-profile h3,
+        body .game-profile h3 {
+            color: #000 !important;
+        }
+
+        body.night-mode .game-profile h3,
+        body.night-mode .game-container .game-profile h3 {
+            color: #00ffff !important;
+        }
+
+        /* Game container: make Play / More Info buttons match other dark boxes in day mode */
+        .game-container .power-up-btn {
+            background: rgba(0,0,0,0.3) !important;
+            color: #fff !important;
+            border-color: #000000 !important;
+            box-shadow: none !important;
+        }
+
+        .game-container .power-up-btn:hover {
+            background: rgba(0,0,0,0.45) !important;
+            transform: translateY(-3px);
+        }
+
+        /* Night mode for Play / More Info buttons: match .mads-bgm-btn behavior */
+        body.night-mode .game-container .power-up-btn {
+            background: linear-gradient(135deg, #000428 0%, #004e92 100%) !important;
+            color: #ffffff !important;
+            border-color: #00ffff !important;
+        }
+
+        body.night-mode .game-container .power-up-btn:hover {
+            background: #000 !important;
+            color: #fff !important;
+            border-color: #fff !important;
+            transform: translateY(-3px);
+        }
+
+        a.power-up-btn {
+            display: inline-block;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        a.power-up-btn:hover {
+            transform: scale(1.05);
+            text-decoration: none !important;
+        }
+
+        /* Media queries... (keep existing media queries) */
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.8rem; }
+            .container { padding: 1rem; }
+            
+            .nav-btn {
+                padding: 0.6rem 1rem;
+                font-size: 1rem;
+                flex: 1;
+                min-width: 120px;
+            }
+            
+            nav {
+                gap: 0.5rem;
+                padding: 0.5rem;
+            }
+            
+            .about-container {
+                flex-direction: column;
+                text-align: center;
+                align-items: center;
+            }
+            
+            .profile-section {
+                flex: none;
+                width: 100%;
+            }
+            
+            .profile-photo {
+                width: 200px;
+                height: 200px;
+            }
+            
+            #themeToggle {
+                bottom: 10px;
+                right: 10px;
+                padding: 8px 16px;
+                font-size: 0.9rem;
+            }
+            
+            #musicToggle {
+                bottom: 70px;
+                right: 10px;
+                padding: 8px;
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+            
+            .music-visualizer {
+                bottom: 130px;
+                right: 10px;
+            }
+            
+            .pixel-character {
+                display: none;
+            }
+            
+            #gameBackground {
+                opacity: 0.3;
+            }
+            
+            .modal-content {
+                margin: 5% auto;
+                padding: 1.5rem;
+                width: 95%;
+            }
+            
+            .social-icon {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+            
+            /* Space Cleaner mobile adjustments */
+            .game-stats-btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 1rem;
+            }
+            
+            .game-stats-popup {
+                width: 280px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            .game-stats-popup::after {
+                display: none;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.5rem; }
+            .tagline { font-size: 1.2rem; }
+            .section { padding: 1rem; }
+            .skill-grid { grid-template-columns: 1fr; }
+            .profile-name { font-size: 1.5rem; }
+            .profile-title { font-size: 1.2rem; }
+            .profile-photo {
+                width: 180px;
+                height: 180px;
+            }
+            .social-icon {
+                width: 26px;
+                height: 26px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification System -->
+    <div id="notification" class="notification"></div>
+    
+    <!-- Theme Toggle -->
+    <button id="themeToggle" class="comic-border">🌙 Night Mode</button>
+    
+    <!-- Music Player -->
+    <div class="music-visualizer" id="musicVisualizer">
+        <div class="music-bar"></div>
+        <div class="music-bar"></div>
+        <div class="music-bar"></div>
+        <div class="music-bar"></div>
+        <div class="music-bar"></div>
+    </div>
+    <button id="musicToggle" class="comic-border">🔊</button>
+    
+    <!-- Hidden Audio Element -->
+    <audio id="bgm" loop preload="auto">
+        <source src="retromusic.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Hidden Audio Element for MADS -->
+    <audio id="madsBgm" loop preload="auto">
+        <source src="NeonBurnout.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Project Modal -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content comic-border">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Project Details</h2>
+            <div id="modalContent" style="margin-top: 1.5rem; font-size: 1.1rem; line-height: 1.6;"></div>
+        </div>
+    </div>
+
+    <!-- Animated Retro 2D Game Background -->
+    <div id="gameBackground">
+        <div class="game-layer sky">
+            <!-- Retro Sun/Moon -->
+            <div class="retro-sun"></div>
+            
+            <!-- Clouds -->
+            <div class="cloud" style="width: 100px; height: 50px; top: 15%; left: -200px;"></div>
+            <div class="cloud" style="width: 150px; height: 70px; top: 25%; left: -300px; animation-duration: 30s;"></div>
+            <div class="cloud" style="width: 120px; height: 60px; top: 20%; left: -250px; animation-duration: 28s;"></div>
+            
+            <!-- Pixel Block Grid Container -->
+            <div id="blockGrid"></div>
+            
+            <!-- Walking Character -->
+            <div class="pixel-character">
+                <div class="char-head">
+                    <div class="char-eyes"></div>
+                </div>
+                <div class="char-body"></div>
+                <div class="char-legs">
+                    <div class="leg"></div>
+                    <div class="leg"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <h1>🎮 TAKSIMUL HASAN DIP 🎮</h1>
+        <p class="tagline">GAME DESIGNER & GAME DEVELOPER</p>
+    </header>
+
+    <nav>
+        <button class="nav-btn" onclick="playSound('jump'); scrollToSection('about')">About</button>
+        <button class="nav-btn" onclick="playSound('jump'); scrollToSection('skills')">Skills</button>
+        <button class="nav-btn" onclick="playSound('jump'); scrollToSection('projects')">Projects</button>
+        
+        <button class="nav-btn" onclick="playSound('jump'); scrollToSection('contact')">Contact</button>
+    </nav>
+
+    <div class="container">
+        <section id="about" class="section comic-border">
+            <h2>🦸 ABOUT ME</h2>
+            <div class="about-container">
+                <div class="profile-section">
+                    <div class="profile-photo" id="profilePhoto">
+                        <img src="taksimul.jpg.jpg" alt="Taksimul Hasan Dip">
+                    </div>
+                    <div class="profile-info">
+                        <div class="profile-name">Taksimul Hasan Dip</div>
+                        <div class="profile-title">Game Designer</div>
+                    </div>
+                </div>
+                <div class="about-text">
+                    <div class="speech-bubble">
+                        <p id="typingText" style="font-size: 1.2rem; line-height: 1.2;">
+                            <strong>Hey there!</strong> <span id="typewriterText"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="skills" class="section comic-border">
+            <h2>⚡ POWER-UPS</h2>
+            <div class="skill-grid">
+                <div class="skill-card">
+                    <div class="skill-icon">🎯</div>
+                    <div class="skill-name">System Design</div>
+                </div>
+                <div class="skill-card">
+                    <div class="skill-icon">📚</div>
+                    <div class="skill-name">Project Management</div>
+                </div>
+                <div class="skill-card" onclick="window.location.href='game.html'">
+                    <div class="skill-icon">🎮</div>
+                    <div class="skill-name">Game Dev</div>
+                </div>
+                <div class="skill-card" onclick="playSound('jump'); window.location.href='stories.html'">
+    <div class="skill-icon">📖</div>
+    <div class="skill-name">Story Writing</div>
+</div>
+            </div>
+        </section>
+
+        <section id="projects" class="section comic-border">
+            <h2>🎯 QUESTS COMPLETED</h2>
+            
+            <div class="project-card" data-project="1">
+                <div class="project-title">🧟‍♂️Overwhelm</div>
+                <p style="font-size: 1.1rem; margin: 1rem 0;">
+                    A horror survival game where players navigate a maze filled with terrifying creatures, aiming to reach the central tree, the only path to escape, while managing resources and surviving relentless threats. 
+                </p>
+                <button class="power-up-btn" onclick="openProjectModal(1)">View Quest →</button>
+            </div>
+
+            <div class="project-card" data-project="2">
+                <div class="project-title">🏎️The MADS</div>
+                <p style="font-size: 1.1rem; margin: 1rem 0;">
+                    This is a documentation of a game named The MADS.
+                    The MADS throws racers into a deadly fusion of drifting competition and battle-royale combat across shifting, destructible tracks. With weapons, traps, hacking abilities, and relentless enemies, every match becomes a fight to finish first or eliminate all others before they eliminate you. 
+                </p>
+                <button class="power-up-btn" onclick="openProjectModal(2)">View Quest →</button>
+            </div>
+        </section>
+
+        <section id="contact" class="section comic-border">
+            <h2>📬 JOIN THE PARTY</h2>
+            <div class="speech-bubble" style="margin-bottom: 2rem;">
+                <p style="font-size: 1.2rem;">
+                    <strong>Ready to start an adventure?</strong> Drop me a message and let's create something EPIC together! 🎉
+                </p>
+            </div>
+            <form id="contactForm" class="contact-form">
+                <input type="text" id="user_name" class="form-input" placeholder="Your Name" required>
+                <input type="email" id="user_email" class="form-input" placeholder="Your Email" required>
+                <textarea id="message" class="form-input" rows="5" placeholder="Your Message" required></textarea>
+                <button type="submit" class="power-up-btn" id="submitBtn">SEND MESSAGE! 🚀</button>
+            </form>
+        </section>
+    </div>
+
+    <!-- Play Game section removed -->
+
+    <!-- Game Modal -->
+    <div id="gameModal" class="modal">
+        <div class="modal-content comic-border" style="max-width: 800px; text-align: center;">
+            <span class="close" onclick="closeGameModal()">&times;</span>
+            <h2 style="color: #ff0000;">🌌 SPACE CLEANER</h2>
+            <p style="margin: 1rem 0; font-size: 1.1rem;">
+                The game will open in a new tab. If it doesn't open automatically, click the link below:
+            </p>
+            
+            <div style="background: #222; padding: 1.5rem; border-radius: 10px; margin: 1.5rem 0;">
+                <p style="margin-bottom: 1rem;">🔗 Game URL:</p>
+                <code style="background: #000; color: #00ffff; padding: 0.5rem 1rem; border-radius: 5px; word-break: break-all; display: inline-block;">
+                    https://gx.games/games/p0v448/space-cleaner/
+                </code>
+            </div>
+            
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin: 2rem 0;">
+                <button onclick="openGameInNewTab()" class="power-up-btn" style="background: linear-gradient(135deg, #00ff00 0%, #00cc00 100%);">
+                    🎮 OPEN GAME NOW
+                </button>
+                <button onclick="closeGameModal()" class="power-up-btn" style="background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);">
+                    ❌ CANCEL
+                </button>
+            </div>
+            
+            <div style="margin-top: 2rem; color: #888; font-size: 0.9rem;">
+                <p>Note: Some browsers may block pop-ups. Please allow pop-ups for this site if prompted.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p style="font-size: 1.2rem;">© 2024 TAKSIMUL HASAN DIP | GAME OVER? NEVER! 🎮</p>
+        <p style="margin-top: 0.5rem;">Made with 💖 and lots of ☕</p>
+        <!-- Social Media Links -->
+        <div class="social-media-section">
+            <a href="https://www.facebook.com/taksimul.hasan.7489" target="_blank" class="social-link" onclick="playSound('jump')">
+                <div class="social-icon" style="background: linear-gradient(135deg, #000000 0%, #0077ff 100%);">
+                    <span>f</span>
+                </div>
+            </a>
+            
+            <a href="https://www.instagram.com/into_the_deep_sleep" target="_blank" class="social-link" onclick="playSound('jump')">
+                <div class="social-icon" style="background: linear-gradient(135deg, #000000 0%, #C13584 100%);">
+                    <span>📷</span>
+                </div>
+            </a>
+            
+            <a href="https://x.com/Night_Sword_74" target="_blank" class="social-link" onclick="playSound('jump')">
+                <div class="social-icon" style="background: linear-gradient(135deg, #000000 0%, #657786 100%);">
+                    <span>𝕏</span>
+                </div>
+            </a>
+            
+            <a href="https://www.linkedin.com/in/taksimul-hasan-dip-86864a272" target="_blank" class="social-link" onclick="playSound('jump')">
+                <div class="social-icon" style="background: linear-gradient(135deg, #0077B5 0%, #000000 100%);">
+                    <span>in</span>
+                </div>
+            </a>
+            
+            <a href="https://www.youtube.com/@AnOldSerpent" target="_blank" class="social-link" onclick="playSound('jump')">
+                <div class="social-icon" style="background: linear-gradient(135deg, #ff0101 0%, #000000 100%);">
+                    <span>▶</span>
+                </div>
+            </a>
+            
+            <a href="https://github.com/nightsword74" target="_blank" class="social-link" onclick="playSound('jump')">
+                <div class="social-icon" style="background: linear-gradient(135deg, #333333 0%, #000000 100%);">
+                    <span>🐈‍⬛</span>
+                </div>
+            </a>
+        </div>
+    </footer>
+
+    <!-- Load EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    
+    <script>
+        // ===== EMAILJS CONFIGURATION =====
+        (function() {
+            emailjs.init({
+                publicKey: "oN4-ibzsPeasKhHb-",
+            });
+        })();
+
+        const EMAILJS_SERVICE_ID = "service_v4g9bxm";
+        const EMAILJS_TEMPLATE_ID = "template_djwl0gr";
+
+        async function sendEmail(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('user_name').value;
+            const email = document.getElementById('user_email').value;
+            const message = document.getElementById('message').value;
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnText = submitBtn.innerHTML;
+            
+            submitBtn.innerHTML = 'SENDING... ⏳';
+            submitBtn.disabled = true;
+            
+            const templateParams = {
+                to_name: "Taksimul",
+                from_name: name,
+                from_email: email,
+                message: message,
+                reply_to: email,
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString()
+            };
+            
+            try {
+                const response = await emailjs.send(
+                    EMAILJS_SERVICE_ID,
+                    EMAILJS_TEMPLATE_ID,
+                    templateParams
+                );
+                
+                showNotification('🎉 MESSAGE SENT! I\'ll get back to you soon!');
+                document.getElementById('contactForm').reset();
+                playSound('powerup');
+                
+            } catch (error) {
+                console.error('EmailJS Error:', error);
+                
+                if (error.status === 0) {
+                    showNotification('⚠️ Network error. Please check your connection and try again.');
+                } else if (error.status === 400) {
+                    showNotification('⚠️ Invalid form data. Please check your inputs.');
+                } else {
+                    showNotification('⚠️ Failed to send message. Please try again later.');
+                }
+                
+                playSound('jump');
+                
+            } finally {
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        document.getElementById('contactForm').addEventListener('submit', sendEmail);
+
+        // ===== BACKGROUND MUSIC PLAYER =====
+        const bgm = document.getElementById('bgm');
+        const madsBgm = document.getElementById('madsBgm');
+        const musicToggle = document.getElementById('musicToggle');
+        const musicVisualizer = document.getElementById('musicVisualizer');
+        let isMusicPlaying = false;
+        let currentMusic = 'main';
+        let visualizerInterval = null;
+
+        function initMusicPlayer() {
+            bgm.volume = 0.3;
+            madsBgm.volume = 0.3;
+            
+            const savedVolume = localStorage.getItem('portfolioMusicVolume');
+            const savedMuted = localStorage.getItem('portfolioMusicMuted');
+            
+            if (savedVolume !== null) {
+                bgm.volume = parseFloat(savedVolume);
+                madsBgm.volume = parseFloat(savedVolume);
+            }
+            
+            if (savedMuted === 'true') {
+                bgm.muted = true;
+                madsBgm.muted = true;
+                musicToggle.classList.add('muted');
+                musicToggle.textContent = '🔇';
+                musicVisualizer.style.display = 'none';
+            } else {
+                document.addEventListener('click', function startMusicOnClick() {
+                    if (!isMusicPlaying && !bgm.muted) {
+                        bgm.play().then(() => {
+                            isMusicPlaying = true;
+                            currentMusic = 'main';
+                            musicToggle.textContent = '🔊';
+                            startVisualizer();
+                            showNotification("🎵 Retro music activated!");
+                        }).catch(e => {
+                            console.log("Autoplay prevented:", e);
+                        });
+                    }
+                    document.removeEventListener('click', startMusicOnClick);
+                }, { once: true });
+            }
+        }
+
+        function switchToMadsMusic() {
+            if (currentMusic === 'main' && isMusicPlaying && !bgm.muted) {
+                bgm.pause();
+                madsBgm.currentTime = 0;
+                madsBgm.play().then(() => {
+                    currentMusic = 'mads';
+                    startVisualizer();
+                    showNotification("🎵 Switching to Neon Burnout soundtrack!");
+                }).catch(e => {
+                    console.log("MADS music play error:", e);
+                });
+            } else if (currentMusic === 'mads') {
+                return;
+            }
+        }
+
+        function switchToMainMusic() {
+            if (currentMusic === 'mads' && isMusicPlaying && !madsBgm.muted) {
+                madsBgm.pause();
+                bgm.currentTime = 0;
+                bgm.play().then(() => {
+                    currentMusic = 'main';
+                    startVisualizer();
+                    showNotification("🎵 Switching to main menu music!");
+                }).catch(e => {
+                    console.log("Main music play error:", e);
+                });
+            } else if (currentMusic === 'main') {
+                return;
+            }
+        }
+
+        musicToggle.addEventListener('click', function() {
+            if (currentMusic === 'main') {
+                const audio = bgm;
+                if (audio.muted || audio.paused) {
+                    audio.muted = false;
+                    audio.play().then(() => {
+                        isMusicPlaying = true;
+                        this.classList.remove('muted');
+                        this.textContent = '🔊';
+                        musicVisualizer.style.display = 'flex';
+                        startVisualizer();
+                        showNotification("🎵 Music ON!");
+                        localStorage.setItem('portfolioMusicMuted', 'false');
+                    });
+                } else {
+                    audio.muted = true;
+                    this.classList.add('muted');
+                    this.textContent = '🔇';
+                    musicVisualizer.style.display = 'none';
+                    stopVisualizer();
+                    showNotification("🔇 Music OFF!");
+                    localStorage.setItem('portfolioMusicMuted', 'true');
+                }
+            } else {
+                const audio = madsBgm;
+                if (audio.muted || audio.paused) {
+                    audio.muted = false;
+                    audio.play().then(() => {
+                        isMusicPlaying = true;
+                        this.classList.remove('muted');
+                        this.textContent = '🔊';
+                        musicVisualizer.style.display = 'flex';
+                        startVisualizer();
+                        showNotification("🎵 Neon Burnout music ON!");
+                        localStorage.setItem('portfolioMusicMuted', 'false');
+                    });
+                } else {
+                    audio.muted = true;
+                    this.classList.add('muted');
+                    this.textContent = '🔇';
+                    musicVisualizer.style.display = 'none';
+                    stopVisualizer();
+                    showNotification("🔇 Music OFF!");
+                    localStorage.setItem('portfolioMusicMuted', 'true');
+                }
+            }
+        });
+
+        function startVisualizer() {
+            if (visualizerInterval) clearInterval(visualizerInterval);
+            
+            visualizerInterval = setInterval(() => {
+                const bars = document.querySelectorAll('.music-bar');
+                bars.forEach(bar => {
+                    const randomHeight = Math.floor(Math.random() * 10) + 8;
+                    bar.style.height = `${randomHeight}px`;
+                    bar.style.opacity = Math.random() * 0.5 + 0.5;
+                });
+            }, 200);
+        }
+
+        function stopVisualizer() {
+            if (visualizerInterval) {
+                clearInterval(visualizerInterval);
+                visualizerInterval = null;
+            }
+            const bars = document.querySelectorAll('.music-bar');
+            bars.forEach(bar => {
+                bar.style.height = '8px';
+                bar.style.opacity = '0.3';
+            });
+        }
+
+        // ===== GAME STATISTICS ENHANCEMENT =====
+        const gameStats = {
+            plays: 0,
+            lastPlayed: null,
+            bestScore: 0,
+            totalPlayTime: 0,
+            achievements: []
+        };
+
+        function loadGameStats() {
+            const savedStats = localStorage.getItem('spaceCleanerStats');
+            if (savedStats) {
+                try {
+                    const parsedStats = JSON.parse(savedStats);
+                    Object.assign(gameStats, parsedStats);
+                    updateGameStatsDisplay();
+                    updatePlayBadge();
+                } catch (e) {
+                    console.log("Error loading game stats:", e);
+                }
+            }
+        }
+
+        function saveGameStats() {
+            localStorage.setItem('spaceCleanerStats', JSON.stringify(gameStats));
+            updateGameStatsDisplay();
+        }
+
+        function updateGameStatsDisplay() {
+            const playCountDisplay = document.getElementById('playCountDisplay');
+            const totalPlaysStat = document.getElementById('totalPlaysStat');
+            const bestScoreStat = document.getElementById('bestScoreStat');
+            const playTimeStat = document.getElementById('playTimeStat');
+            
+            if (playCountDisplay) {
+                playCountDisplay.textContent = gameStats.plays;
+                const firstSpan = playCountDisplay.parentElement.querySelector('span:first-child');
+                if (firstSpan) {
+                    if (gameStats.plays === 0) {
+                        firstSpan.textContent = '📊';
+                    } else if (gameStats.plays < 5) {
+                        firstSpan.textContent = '🎮';
+                    } else if (gameStats.plays < 10) {
+                        firstSpan.textContent = '🏆';
+                    } else {
+                        firstSpan.textContent = '🌟';
+                    }
+                }
+            }
+            
+            if (totalPlaysStat) totalPlaysStat.textContent = gameStats.plays;
+            if (bestScoreStat) bestScoreStat.textContent = gameStats.bestScore;
+            if (playTimeStat) {
+                const hours = Math.floor(gameStats.totalPlayTime / 60);
+                const minutes = gameStats.totalPlayTime % 60;
+                playTimeStat.textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            }
+        }
+
+        function updatePlayBadge() {
+            const playBadge = document.getElementById('playBadge');
+            if (playBadge && gameStats.plays > 0) {
+                playBadge.textContent = gameStats.plays;
+                playBadge.style.display = 'block';
+                
+                if (gameStats.plays >= 10) {
+                    playBadge.style.background = 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)';
+                    playBadge.style.color = '#000';
+                } else if (gameStats.plays >= 5) {
+                    playBadge.style.background = 'linear-gradient(135deg, #00ff00 0%, #00cc00 100%)';
+                    playBadge.style.color = '#000';
+                }
+            } else if (playBadge) {
+                playBadge.style.display = 'none';
+            }
+        }
+
+        function trackGamePlay() {
+            gameStats.plays++;
+            gameStats.lastPlayed = new Date().toISOString();
+            gameStats.totalPlayTime += Math.floor(Math.random() * 26) + 5;
+            
+            const newScore = Math.floor(Math.random() * 10000);
+            if (newScore > gameStats.bestScore) {
+                gameStats.bestScore = newScore;
+            }
+            
+            saveGameStats();
+            updatePlayBadge();
+            
+            if (gameStats.plays === 1) {
+                showNotification("First game played! 🎉 Keep going!");
+            } else if (gameStats.plays === 5) {
+                showNotification("5 games played! You're getting good! ⭐");
+            } else if (gameStats.plays === 10) {
+                showNotification("10 games played! You're a pro! 🏆");
+            }
+        }
+
+        function resetGameStats() {
+            if (confirm("Are you sure you want to reset all game statistics?")) {
+                gameStats.plays = 0;
+                gameStats.lastPlayed = null;
+                gameStats.bestScore = 0;
+                gameStats.totalPlayTime = 0;
+                gameStats.achievements = [];
+                saveGameStats();
+                updatePlayBadge();
+                toggleStatsPopup();
+                showNotification("Game statistics reset! 📊");
+            }
+        }
+
+        function toggleStatsPopup() {
+            const popup = document.getElementById('gameStatsPopup');
+            popup.classList.toggle('active');
+        }
+
+        document.addEventListener('click', function(event) {
+            const popup = document.getElementById('gameStatsPopup');
+            const statsBtn = document.getElementById('gameStatsBtn');
+            
+            if (popup && popup.classList.contains('active') && 
+                !popup.contains(event.target) && 
+                !statsBtn.contains(event.target)) {
+                popup.classList.remove('active');
+            }
+        });
+
+        function hoverGameProfile() {
+            
+        }
+
+        function unhoverGameProfile() {
+        }
+
+        // ===== OTHER FUNCTIONS =====
+        const projectDetails = {
+            1: {
+                title: "🧟‍♂️Overwhelm - Complete Details",
+                content: `
+                    <div class="project-card" data-project="overwhelm">
+                <div class="project-title">👻 OVERWHELM - Horror Survival Game</div>
+                <div class="project-tags">
+                    <span class="project-tag">Unreal Engine</span>
+                    <span class="project-tag">Blueprint</span>
+                    <span class="project-tag">Horror</span>
+                    <span class="project-tag">Survival</span>
+                    <span class="project-tag">PC</span>
+                    <span class="project-tag">Mobile</span>
+                </div>
+                
+                <div class="story-synopsis" style="background: #f0f0f0; padding: 1rem; border-radius: 10px; margin: 1rem 0; border: 2px solid #000;">
+                    <h4 style="color: #ff6b6b; margin-bottom: 0.5rem;">📖 Story Synopsis:</h4>
+                    <p style="font-style: italic; margin: 0;">
+                        "You find yourself trapped in a mysterious, unknown maze. A distant whisper guides you: 'Find the great tree... it's your only way out.' But you're not alone. Terrifying monsters lurk in the shadows, ready to hunt you down. Navigate the maze, survive the horrors, and uncover the hidden truth that lies within. Will you reach the tree and escape... or become part of the mystery?"
+                    </p>
+                </div>
+                
+                <div class="project-details">
+                    <div class="detail-row">
+                        <span class="detail-label">🎮 Genre:</span>
+                        <span class="detail-value">Horror, Survival</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">⚙️ Engine:</span>
+                        <span class="detail-value">Unreal Engine (Blueprint)</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">💻 Platform:</span>
+                        <span class="detail-value">PC, Mobile</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">👥 Characters:</span>
+                        <span class="detail-value">Player + 6 Unique Monsters</span>
+                    </div>
+                </div>
+                
+                <div class="project-media">
+                    <div class="media-container">
+                        <h4 style="color: #667eea; margin: 1rem 0 0.5rem;">🎬 Official Trailer:</h4>
+                        <div class="video-container">
+                            <iframe 
+                                width="100%" 
+                                height="400" 
+                                src="https://www.youtube.com/embed/YEZ3WnXwSP4" 
+                                title="Overwhelm Game Official Trailer" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                referrerpolicy="strict-origin-when-cross-origin" 
+                                allowfullscreen
+                                style="border: 3px solid #000; border-radius: 10px;">
+                            </iframe>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 1.5rem 0;">
+                        <h4 style="color: #667eea; margin-bottom: 0.5rem;">✨ Core Gameplay Features:</h4>
+                        <ul style="padding-left: 1.5rem; margin: 0;">
+                            <li>Explore mysterious maze corridors with fog and narrow passages</li>
+                            <li>Escape from six unique deadly monsters with different behaviors</li>
+                            <li>Hide in campfire safe zones for temporary safety</li>
+                            <li>Follow whisper voices guiding you toward the Great Tree</li>
+                            <li>First-person immersive horror experience</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="project-links">
+                    <button class="power-up-btn" onclick="window.open('OVERWHELM_FULL_DOCUMENT.pdf', '_blank')">📚 Full Game Design Document</button> <br><br>
+                    <button class="power-up-btn" 
+                onclick="window.open('https://drive.google.com/drive/folders/1uS5h9iNNtpRoXTHjNHeHYSCc6_9c78WO?usp=sharing', '_blank')">
+            🎯 View All Details</button> <br><br>
+                    <button class="power-up-btn" onclick="window.open('Overwhelm.Zip')">🎮 Download Demo</button>
+                </div>
+            </div>
+                        `
+            },
+            2: {
+                title: "🚘The MADS - Complete Details",
+                content: `
+                    <div class="mads-project">
+                        <div class="game-cover-container" style="text-align: center; margin-bottom: 2rem;">
+                            <img src="madscover.png" alt="The MADS Game Cover" style="max-width: 100%; border: 4px solid #000; border-radius: 15px; box-shadow: 8px 8px 0 rgba(0,0,0,0.3);">
+                        </div>
+                        
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); border: 4px solid #000;">
+                            <tr>
+                                <td style="padding: 1rem; border: 2px solid #000; font-weight: bold;">🎮 Game Engine:</td>
+                                <td class="mads-value" style="padding: 1rem; border: 2px solid #000;">Unreal Engine</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 1rem; border: 2px solid #000; font-weight: bold;">🏆 Genre:</td>
+                                <td class="mads-value" style="padding: 1rem; border: 2px solid #000;">Race, Multiplayer, Battle Royale</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 1rem; border: 2px solid #000; font-weight: bold;">💻 Platforms:</td>
+                                <td class="mads-value" style="padding: 1rem; border: 2px solid #000;">PC, PlayStation, Xbox</td>
+                            </tr>
+                        </table>
+                        
+                        <div class="world-image-container" style="text-align: center; margin-bottom: 2rem;">
+                            <img src="aurelis.png" alt="Aurelis World" style="max-width: 80%; border: 4px solid #000; border-radius: 15px; box-shadow: 8px 8px 0 rgba(0,0,0,0.3);">
+                        </div>
+                        
+                        <div class="lore-section" style="background: #f0f0f0; padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem; border: 4px solid #000;">
+                            <h3 style="color: #ff6b6b; margin-bottom: 1rem;">🌌 THE LORE OF AURELIS</h3>
+                            <p style="font-size: 1.1rem; line-height: 1.6;">
+                                In the year 6435, on an abundant radiant green-gold world named Aurelis, an event shakes the entire Andromeda Galaxy.
+                                Aurelis was home to the Thetren's, a Type III civilization, one of the most advanced species known. 
+                                Every Solar cycle, the Thetren's Supremes hosts a brutal and spectacular event:
+                                <strong>The Aurelis Intergalactic Death Race "The MADS"</strong>
+                            </p>
+                        </div>
+                        
+                        <div class="race-description" style="margin-bottom: 2rem;">
+                            <h4 style="color: #667eea; margin-bottom: 0.5rem;">🏁 THE RACE</h4>
+                            <p style="font-size: 1.1rem; line-height: 1.6;">
+                                Species from across galaxies gather to compete for the ultimate prize:
+                                <strong>The Intergalactic Currency Nebulite</strong>, a resource so powerful that civilizations have risen and fallen for it.
+                            </p>
+                            <p style="font-size: 1.1rem; line-height: 1.6; margin-top: 1rem;">
+                                To enter the race, each team must consist of exactly four specialists, each piloting a unique, ability-enhanced vehicle:
+                            </p>
+                        </div>
+                        
+                        <div class="roles-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+                            <div class="role-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 1.5rem; border: 4px solid #000; border-radius: 15px;">
+                                <h4 style="color: #000; margin-bottom: 0.5rem;">🔧 1. The Engineer</h4>
+                                <p style="color: #000; font-size: 0.9rem;">Drives a regenerative vehicle. Can respawn and acts as team support.</p>
+                            </div>
+                            <div class="role-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 1.5rem; border: 4px solid #000; border-radius: 15px;">
+                                <h4 style="color: #000; margin-bottom: 0.5rem;">⚙️ 2. The Modder</h4>
+                                <p style="color: #000; font-size: 0.9rem;">Mechanic-genius. Can upgrade or mutate cars mid-race.</p>
+                            </div>
+                            <div class="role-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 1.5rem; border: 4px solid #000; border-radius: 15px;">
+                                <h4 style="color: #000; margin-bottom: 0.5rem;">💻 3. The Hacker</h4>
+                                <p style="color: #000; font-size: 0.9rem;">Neural-linked cyber racer. Can override enemy vehicles.</p>
+                            </div>
+                            <div class="role-card" style="background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); padding: 1.5rem; border: 4px solid #000; border-radius: 15px;">
+                                <h4 style="color: #000; margin-bottom: 0.5rem;">💣 4. The Bomber</h4>
+                                <p style="color: #000; font-size: 0.9rem;">Weaponized assault vehicle. Uses guns, plasma charges, bombs.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="race-rules" style="background: #000; color: #fff; padding: 1.5rem; border-radius: 15px; margin: 2rem 0;">
+                            <h3 style="color: #ffd700; margin-bottom: 1rem; text-align: center;">🏆 RACE RULES</h3>
+                            <ul style="padding-left: 1.5rem; margin: 0;">
+                                <li>Every racer competes individually, but victory is team-based</li>
+                                <li><strong>Two ways to win:</strong></li>
+                                <li>1. Finish the race in 1st place - All other teams are instantly disqualified and destroyed</li>
+                                <li>2. Eliminate all other teams - Surviving team wins without crossing finish line</li>
+                                <li>Tracks are alive, shifting, destructible, and influenced by Thetren technology</li>
+                                <li>Every race is unpredictable</li>
+                            </ul>
+                        </div>
+
+                        <div class="game-modes-section" style="margin: 3rem 0;">
+                            <h3 style="color: #ff00ff; text-align: center; margin-bottom: 2rem; text-shadow: 2px 2px 0 #00ffff;">🎮 GAME MODES</h3>
+                            
+                            <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border: 4px solid #ffd700;">
+                                <h4 style="color: #ffd700; margin-bottom: 1rem; text-align: center; font-size: 1.5rem;">📖 STORY MODE — Seasonal Chapter System</h4>
+                                <p style="color: #fff; font-size: 1.1rem; text-align: center; margin-bottom: 1.5rem; font-weight: bold;">
+                                    Follow Team: <span style="color: #00ffff;">THE EDGERUNNERS</span>
+                                </p>
+                                <p style="color: #fff; font-size: 1.1rem; line-height: 1.6;">
+                                    Each season adds a new chapter of the story, expanding the universe and revealing more about:
+                                </p>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0;">
+                                    <div style="text-align: center;">
+                                        <div style="color: #00ffff; font-weight: bold;">Michel Stwert</div>
+                                        <div style="color: #fff; font-size: 0.9rem;">The Engineer</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="color: #00ffff; font-weight: bold;">Rimew yan Mewrog</div>
+                                        <div style="color: #fff; font-size: 0.9rem;">The Modder</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="color: #00ffff; font-weight: bold;">Harbor Relly</div>
+                                        <div style="color: #fff; font-size: 0.9rem;">The Bomber</div>
+                                    </div>
+                                    <br></br>
+                                    <div style="text-align: center;">
+                                        <div style="color: #00ffff; font-weight: bold;">Judrey Di Tres</div>
+                                        <div style="color: #fff; font-size: 0.9rem;">The Hacker</div>
+                                    </div>
+                                </div>
+                                
+                                <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 10px; margin-top: 1rem;">
+                                    <h5 style="color: #ffd700; margin-bottom: 0.5rem;">🎯 Story Mode Core Features</h5>
+                                    <ul style="color: #fff; padding-left: 1.5rem; margin: 0;">
+                                        <li>Fully voiced cinematic cutscenes</li>
+                                        <li>Playable character missions</li>
+                                        <li>Story-specific tracks that evolve with each chapter</li>
+                                        <li>Boss races against elite teams</li>
+                                        <li>Unlockable vehicles, skins, species lore, and flashbacks</li>
+                                        <li>Emotional arcs tied to rescuing Mewrog</li>
+                                        <li>Seasonal antagonists introduced each chapter</li>
+                                        <li>Each season ends with a major lore twist</li>
+                                    </ul>
+                                    <p style="color: #fff; font-style: italic; margin-top: 1rem;">
+                                        This builds a long-term world that can grow for many seasons.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div style="background: linear-gradient(135deg, #8B0000 0%, #FF4500 100%); padding: 2rem; border-radius: 15px; border: 4px solid #000;">
+                                <h4 style="color: #fff; margin-bottom: 1rem; text-align: center; font-size: 1.5rem;">⚔️ BATTLE ROYALE MODE — Intergalactic Mass Race Survival</h4>
+                                <p style="color: #fff; font-size: 1.1rem; text-align: center; margin-bottom: 1.5rem; font-weight: bold;">
+                                    A massive 40–80 players competitive mode.
+                                </p>
+                                
+                                <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 10px;">
+                                    <h5 style="color: #ffd700; margin-bottom: 0.5rem;">🏆 Battle Royale Core Features</h5>
+                                    <ul style="color: #fff; padding-left: 1.5rem; margin: 0;">
+                                        <li>Drop-in start from orbital stations</li>
+                                        <li>Scattered Matter-Forge pickups</li>
+                                        <li>Randomized weapon and mod spawns</li>
+                                        <li>Temporary alliances, betrayals, chaotic racing</li>
+                                        <li>Dynamic shrinking map zones (storm, gravity collapse, acid fog, etc.)</li>
+                                        <li>Last Team Alive OR First to finish wins</li>
+                                        <li>Players can spectate teammates after death</li>
+                                        <li>Arena-style final zones (tight tunnels, zero-gravity waves, collapse tracks)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="team-section" style="margin: 3rem 0;">
+                            <h3 style="color: #ff6b6b; text-align: center; margin-bottom: 2rem;">🌟 THE EDGERUNNERS - MAIN STORY TEAM</h3>
+                            
+                            <div class="character-profile" style="display: flex; gap: 2rem; margin-bottom: 3rem; align-items: flex-start;">
+                                <div class="character-image" style="flex: 0 0 250px;">
+                                    <img src="michel.png" alt="Michel Stwert" style="width: 250px; height: 350px; object-fit: cover; border: 4px solid #000; border-radius: 15px; box-shadow: 8px 8px 0 rgba(0,0,0,0.3);">
+                                </div>
+                                <div class="character-info" style="flex: 1;">
+                                    <h4 style="color: #ff00ff; margin-bottom: 0.5rem;">🚗 Michel Stwert (The Engineer)</h4>
+                                    <div class="character-details" style="background: #f0f0f0; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+                                        <p><strong>Species:</strong> Human (British)</p>
+                                        <p><strong>Appearance:</strong> 6.1ft stylish British white male resembling a Hollywood star, brown hair, stubble beard, blue eyes. Wears futuristic red sleeveless blazer with black stripes, matching red pants with bold black strips, red shoes with sci-fi cyan highlights.</p>
+                                        <p><strong>Special Abilities:</strong> 
+                                            <ul style="padding-left: 1.5rem; margin: 0.5rem 0;">
+                                                <li>Repairs cars faster than other contestants</li>
+                                                <li>Athletic body helps him jump on enemy cars with higher accuracy</li>
+                                                <li>Skilled dummy runner for distractions</li>
+                                            </ul>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="character-profile" style="display: flex; gap: 2rem; margin-bottom: 3rem; align-items: flex-start;">
+                                <div class="character-image" style="flex: 0 0 250px;">
+                                    <img src="rimew.png" alt="Rimew yan Mewrog" style="width: 250px; height: 350px; object-fit: cover; border: 4px solid #000; border-radius: 15px; box-shadow: 8px 8px 0 rgba(0,0,0,0.3);">
+                                </div>
+                                <div class="character-info" style="flex: 1;">
+                                    <h4 style="color: #ff00ff; margin-bottom: 0.5rem;">⚙️ Rimew yan Mewrog (The Modder)</h4>
+                                    <div class="character-details" style="background: #f0f0f0; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+                                        <p><strong>Species:</strong> Kittins (Ginger ear)</p>
+                                        <p><strong>Appearance:</strong> 5.7ft with bright orange layered hair, large warm brown eyes, fair skin. Has prominent cat features including large nekomimi-style ears and long curled cat tail with black markings. Slender athletic build with visible midriff.</p>
+                                        <p><strong>Special Abilities:</strong> 
+                                            <ul style="padding-left: 1.5rem; margin: 0.5rem 0;">
+                                                <li>Can block hackers with extra time</li>
+                                                <li>Can mod cars faster than others</li>
+                                                <li>Has faster boosters than any other modders</li>
+                                            </ul>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="character-profile" style="display: flex; gap: 2rem; margin-bottom: 3rem; align-items: flex-start;">
+                                <div class="character-image" style="flex: 0 0 250px;">
+                                    <img src="harbor.png" alt="Harbor Relly" style="width: 250px; height: 350px; object-fit: cover; border: 4px solid #000; border-radius: 15px; box-shadow: 8px 8px 0 rgba(0,0,0,0.3);">
+                                </div>
+                                <div class="character-info" style="flex: 1;">
+                                    <h4 style="color: #ff00ff; margin-bottom: 0.5rem;">💣 Harbor Relly (The Bomber)</h4>
+                                    <div class="character-details" style="background: #f0f0f0; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+                                        <p><strong>Species:</strong> Gigan (Black)</p>
+                                        <p><strong>Appearance:</strong> 8.5ft massive buff Goth Rockstar with black skin, long black hair, thick hairy black beard. Wears prominent black spiked leather clothing, studded vest, long black jeans, with piercings. Always carries a black electric guitar.</p>
+                                        <p><strong>Special Abilities:</strong> 
+                                            <ul style="padding-left: 1.5rem; margin: 0.5rem 0;">
+                                                <li>More aggressive than other bombers</li>
+                                                <li>Can launch bombs with his guitar</li>
+                                                <li>Has more spikes for traps and longer-lasting smoke effects</li>
+                                            </ul>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="character-profile" style="display: flex; gap: 2rem; margin-bottom: 3rem; align-items: flex-start;">
+                                <div class="character-image" style="flex: 0 0 250px;">
+                                    <img src="judrey.png" alt="Judrey Di Tres" style="width: 250px; height: 350px; object-fit: cover; border: 4px solid #000; border-radius: 15px; box-shadow: 8px 8px 0 rgba(0,0,0,0.3);">
+                                </div>
+                                <div class="character-info" style="flex: 1;">
+                                    <h4 style="color: #ff00ff; margin-bottom: 0.5rem;">💻 Judrey Di Tres (The Hacker)</h4>
+                                    <div class="character-details" style="background: #f0f0f0; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+                                        <p><strong>Species:</strong> Triyes (White)</p>
+                                        <p><strong>Appearance:</strong> 5'8" slim build, wears black hoodie with white stripes concealing third eye on forehead. Has black spots in eyes, wears navy blue jeans and smartwatch. Gloomy/depressed appearance, always carries black backpack.</p>
+                                        <p><strong>Special Abilities:</strong> 
+                                            <ul style="padding-left: 1.5rem; margin: 0.5rem 0;">
+                                                <li>With third eye: hacking range increased and hacks faster</li>
+                                                <li>Can detect anyone and hide teammates from other hackers efficiently</li>
+                                                <li>Can scan more accurately and faster for traps</li>
+                                            </ul>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="backstory-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 2rem; border-radius: 15px; margin: 2rem 0;">
+                            <h3 style="color: #ffd700; margin-bottom: 1rem; text-align: center;">📖 BACKSTORY</h3>
+                            <p style="font-size: 1.1rem; line-height: 1.6;">
+                                The Zinons captured the Solar System, enslaving humanity. During an escape attempt, 12-year-old Michel Stwert fled with his family, but their ship was destroyed. Michel survived in an escape pod and was rescued by space pirate Mewrog, who raised him alongside his daughter Rimew.
+                            </p>
+                            <p style="font-size: 1.1rem; line-height: 1.6; margin-top: 1rem;">
+                                When Mewrog was captured by UAC, Michel and Rimew escaped with Harbor's help. They found refuge with hacker Judrey. To pay Mewrog's release fee, they entered The MADS as "The Edgerunners," facing racism and underestimation as they fight to save their father figure.
+                            </p>
+                        </div>
+                        
+                        <div class="gameplay-section" style="margin: 3rem 0;">
+                            <h3 style="color: #ff6b6b; text-align: center; margin-bottom: 2rem;">🎮 GAMEPLAY MECHANICS</h3>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                                <div style="background: #f0f0f0; padding: 1.5rem; border-radius: 15px; border: 4px solid #000;">
+                                    <h4 style="color: #667eea; margin-bottom: 0.5rem;">🏎️ Race Features</h4>
+                                    <ul style="padding-left: 1.5rem; margin: 0;">
+                                        <li>Fast-paced racing with realistic car handling</li>
+                                        <li>Attack and parry system between players</li>
+                                        <li>Destructive environments (buildings, terrain, monuments)</li>
+                                        <li>Limited HP and boosters for cars</li>
+                                        <li>Cinematic destruction cutscenes</li>
+                                    </ul>
+                                </div>
+                                
+                                <div style="background: #f0f0f0; padding: 1.5rem; border-radius: 15px; border: 4px solid #000;">
+                                    <h4 style="color: #667eea; margin-bottom: 0.5rem;">⚔️ Combat System</h4>
+                                    <ul style="padding-left: 1.5rem; margin: 0;">
+                                        <li>Missiles, bombs, plasma guns, traps</li>
+                                        <li>Force fields for temporary shields</li>
+                                        <li>Kill & assist tracking system</li>
+                                        <li>Matter-forge resource management</li>
+                                        <li>Character skill cooldowns</li>
+                                    </ul>
+                                </div>
+                                
+                                <div style="background: #f0f0f0; padding: 1.5rem; border-radius: 15px; border: 4px solid #000;">
+                                    <h4 style="color: #667eea; margin-bottom: 0.5rem;">👥 Team System</h4>
+                                    <ul style="padding-left: 1.5rem; margin: 0;">
+                                        <li>4-6 member teams (minimum 4)</li>
+                                        <li>No duplicate roles in 4-member teams</li>
+                                        <li>Species-based skill variations</li>
+                                        <li>In-depth character skill trees</li>
+                                        <li>Different starting positions per team</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div style="background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%); padding: 2rem; border-radius: 15px; margin-top: 3rem; border: 4px solid #00ffff;">
+                                <h4 style="color: #00ffff; text-align: center; margin-bottom: 1.5rem; font-size: 1.5rem;">📺 SPECTATOR MODE — GALACTIC BROADCAST NETWORK (GBN)</h4>
+                                <p style="color: #fff; font-size: 1.1rem; text-align: center; font-style: italic; margin-bottom: 1.5rem;">
+                                    "Watch. Bet. Influence the Race."
+                                </p>
+                                <p style="color: #fff; font-size: 1.1rem; line-height: 1.6;">
+                                    The MADS attracts trillions of viewers across thousands of galaxies.
+                                    To embrace the chaotic entertainment culture of Aurelis, the game includes:
+                                </p>
+                                
+                                <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 10px; margin: 1.5rem 0;">
+                                    <h5 style="color: #ffd700; margin-bottom: 0.5rem;">⭐ Global Spectator Mode</h5>
+                                    <p style="color: #fff; font-size: 1rem; margin-bottom: 0.5rem;">
+                                        Players from any server can join a live broadcast of an ongoing race.
+                                        Spectators can freely:
+                                    </p>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                                        <div style="color: #fff;">
+                                            <div>🎥 Switch camera angles</div>
+                                            <div>👤 Follow individual racers</div>
+                                            <div>🎬 Use cinematic camera paths</div>
+                                        </div>
+                                        <div style="color: #fff;">
+                                            <div>📊 View racer stats, speed, HP, Forge energy</div>
+                                            <div>🧠 Access team strategy overview</div>
+                                            <div>⏱️ See real-time weapon cooldowns</div>
+                                        </div>
+                                        <div style="color: #fff;">
+                                            <div>🔁 Replay big kills or crashes</div>
+                                            <div>🗣️ Live commentary system</div>
+                                        </div>
+                                    </div>
+                                    <p style="color: #fff; font-style: italic; margin-top: 1rem;">
+                                        It feels like watching a real intergalactic sport.
+                                    </p>
+                                </div>
+                                
+                                <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 10px; margin: 1.5rem 0;">
+                                    <h5 style="color: #ffd700; margin-bottom: 1rem;">💰 BETTING SYSTEM — Nebulite Wager Network (NWN)</h5>
+                                    <p style="color: #fff; font-size: 1rem; margin-bottom: 1rem;">
+                                        Spectators can bet Nebulites on nearly any outcome:
+                                    </p>
+                                    
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                                        <div>
+                                            <h6 style="color: #00ffff; margin-bottom: 0.5rem; font-size: 1rem;">1. Winner Prediction</h6>
+                                            <p style="color: #fff; font-size: 0.9rem;">Bet on which team or racer will finish first.</p>
+                                        </div>
+                                        <div>
+                                            <h6 style="color: #00ffff; margin-bottom: 0.5rem; font-size: 1rem;">2. Crash Prediction</h6>
+                                            <p style="color: #fff; font-size: 0.9rem;">Bet on who dies first, which player crashes next, total kills.</p>
+                                        </div>
+                                        <div>
+                                            <h6 style="color: #00ffff; margin-bottom: 0.5rem; font-size: 1rem;">3. Placement Betting</h6>
+                                            <p style="color: #fff; font-size: 0.9rem;">Bet on top 3 placements or last place finishes.</p>
+                                        </div>
+                                        <div>
+                                            <h6 style="color: #00ffff; margin-bottom: 0.5rem; font-size: 1rem;">4. Time Challenges</h6>
+                                            <p style="color: #fff; font-size: 0.9rem;">Bet on race duration or team eliminations.</p>
+                                        </div>
+                                        <div>
+                                            <h6 style="color: #00ffff; margin-bottom: 0.5rem; font-size: 1rem;">5. Role-Based Bets</h6>
+                                            <p style="color: #fff; font-size: 0.9rem;">Unique bets for Hackers, Bombers, Engineers, Modders.</p>
+                                        </div>
+                                        <div>
+                                            <h6 style="color: #00ffff; margin-bottom: 0.5rem; font-size: 1rem;">6. Mega Bets (High-Payout)</h6>
+                                            <p style="color: #fff; font-size: 0.9rem;">Predict team elimination order or track events.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div style="background: rgba(0,255,255,0.1); padding: 1.5rem; border-radius: 10px; border: 2px solid #00ffff; margin-top: 1.5rem;">
+                                    <h5 style="color: #00ffff; margin-bottom: 0.5rem;">🌟 UNIQUE FEATURE: Audience Influence (Optional)</h5>
+                                    <p style="color: #fff; font-size: 1rem;">
+                                        This feature will make this game even more unique:
+                                        <br><br>
+                                        Spectators can spend Nebulite to trigger:
+                                    </p>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                                        <div style="text-align: center; color: #fff;">
+                                            <div>🌧️ Weather changes</div>
+                                        </div>
+                                        <div style="text-align: center; color: #fff;">
+                                            <div>🛣️ Minor track events</div>
+                                        </div>
+                                        <div style="text-align: center; color: #fff;">
+                                            <div>⚠️ Temporary hazards</div>
+                                        </div>
+                                        <div style="text-align: center; color: #fff;">
+                                            <div>⚡ EMP storms</div>
+                                        </div>
+                                        <div style="text-align: center; color: #fff;">
+                                            <div>🌀 Gravity shifts</div>
+                                        </div>
+                                    </div>
+                                    <p style="color: #fff; font-style: italic; margin-top: 1rem;">
+                                        This creates chaos and makes races even more unpredictable.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="download-links" style="text-align: center; margin-top: 3rem;">
+                            <button class="power-up-btn" onclick="window.open('THE MADS.pdf', '_blank')" style="margin: 0.5rem;">📚 Full Game Design Document</button> <br><br>
+                            <button class="power-up-btn" onclick="window.open('https://drive.google.com/drive/folders/1TdbN1XCTt7qmWYZuk-_YQB-l25CKZQXy?usp=sharing', '_blank')" style="margin: 0.5rem;">🎨 View Concept Art Gallery</button>
+                        </div>
+                    </div>
+                `
+            }
+        };
+
+        // Profile Photo Interaction
+        const profilePhoto = document.getElementById('profilePhoto');
+        let photoEffectActive = false;
+
+        profilePhoto.addEventListener('mouseenter', function() {
+            if (!photoEffectActive) {
+                photoEffectActive = true;
+                createPhotoParticles(this);
+                showNotification("Power-up Activated! Level Up! ⚡");
+                
+                this.style.boxShadow = '0 0 30px rgba(255, 0, 255, 0.8), 15px 15px 0 rgba(0,0,0,0.3)';
+                
+                setTimeout(() => {
+                    this.style.boxShadow = '15px 15px 0 rgba(0,0,0,0.3)';
+                    photoEffectActive = false;
+                }, 1000);
+            }
+        });
+
+        profilePhoto.addEventListener('click', function() {
+            playSound('jump');
+        });
+
+        function createPhotoParticles(element) {
+            const rect = element.getBoundingClientRect();
+            const colors = ['#ff00ff', '#00ffff', '#ffff00', '#00ff00'];
+            
+            for (let i = 0; i < 12; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = rect.left + rect.width / 2 + 'px';
+                particle.style.top = rect.top + rect.height / 2 + 'px';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.width = '12px';
+                particle.style.height = '12px';
+                particle.style.borderRadius = '50%';
+                
+                const angle = (Math.PI * 2 * i) / 12;
+                const distance = 40 + Math.random() * 30;
+                particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+                particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+                
+                document.body.appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 800);
+            }
+        }
+
+        // Theme toggle
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            const sky = document.querySelector('.sky');
+            const body = document.body;
+            const isNight = sky.classList.contains('night-mode');
+            
+            if (isNight) {
+                sky.classList.remove('night-mode');
+                body.classList.remove('night-mode');
+                this.textContent = '🌙 Night Mode';
+                showNotification("Day mode activated! ☀️");
+            } else {
+                sky.classList.add('night-mode');
+                body.classList.add('night-mode');
+                this.textContent = '☀️ Day Mode';
+                showNotification("Night mode activated! 🌙");
+            }
+        });
+
+        // Generate retro pixel blocks
+        function generateBlocks() {
+            const blockGrid = document.getElementById('blockGrid');
+            blockGrid.innerHTML = '';
+            createGroundStrips();
+            
+            const platforms = [
+                {x: 10, y: 200, width: 8, type: 'stone'},
+                {x: 30, y: 280, width: 5, type: 'dirt'},
+                {x: 50, y: 240, width: 10, type: 'stone'},
+                {x: 70, y: 320, width: 6, type: 'dirt'},
+                {x: 85, y: 200, width: 7, type: 'stone'},
+            ];
+            
+            platforms.forEach(platform => {
+                createPlatform(platform.x, platform.y, platform.width, platform.type);
+            });
+        }
+
+        function createGroundStrips() {
+            const blockGrid = document.getElementById('blockGrid');
+            
+            const existingStrips = blockGrid.querySelectorAll('.ground-strip');
+            existingStrips.forEach(strip => strip.remove());
+            
+            const stoneStrip = document.createElement('div');
+            stoneStrip.className = 'ground-strip stone-strip';
+            stoneStrip.style.width = '100%';
+            stoneStrip.style.bottom = '0px';
+            stoneStrip.dataset.type = 'stone';
+            blockGrid.appendChild(stoneStrip);
+            
+            const dirtStrip = document.createElement('div');
+            dirtStrip.className = 'ground-strip dirt-strip';
+            dirtStrip.style.width = '100%';
+            dirtStrip.style.bottom = '40px';
+            dirtStrip.dataset.type = 'dirt';
+            blockGrid.appendChild(dirtStrip);
+            
+            const grassStrip = document.createElement('div');
+            grassStrip.className = 'ground-strip grass-strip';
+            grassStrip.style.width = '100%';
+            grassStrip.style.bottom = '80px';
+            grassStrip.dataset.type = 'grass';
+            blockGrid.appendChild(grassStrip);
+            
+            [stoneStrip, dirtStrip, grassStrip].forEach(strip => {
+                strip.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    breakGroundStrip(this);
+                });
+                
+                strip.addEventListener('mouseenter', function() {
+                    this.style.filter = 'brightness(1.2)';
+                });
+                
+                strip.addEventListener('mouseleave', function() {
+                    this.style.filter = 'brightness(1)';
+                });
+            });
+        }
+
+        function createPlatform(xPercent, yPx, widthInBlocks, type) {
+            const blockGrid = document.getElementById('blockGrid');
+            const platformStrip = document.createElement('div');
+            
+            platformStrip.className = `platform-strip ${type}-platform`;
+            platformStrip.style.left = `${xPercent}%`;
+            platformStrip.style.bottom = `${yPx}px`;
+            platformStrip.style.width = `${widthInBlocks * 40}px`;
+            platformStrip.dataset.type = type;
+            platformStrip.dataset.width = widthInBlocks;
+            
+            blockGrid.appendChild(platformStrip);
+            
+            platformStrip.addEventListener('click', function(e) {
+                e.stopPropagation();
+                breakPlatform(this);
+            });
+        }
+
+        function breakGroundStrip(strip) {
+            if (strip.classList.contains('breaking')) return;
+            
+            if (!strip.dataset.health) {
+                strip.dataset.health = 3;
+            }
+            
+            strip.dataset.health--;
+            strip.style.filter = `brightness(${0.5 + (strip.dataset.health * 0.25)})`;
+            
+            if (strip.dataset.health <= 0) {
+                strip.classList.add('breaking');
+                createStripParticles(strip);
+                
+                setTimeout(() => {
+                    strip.remove();
+                    if (strip.dataset.type === 'grass') {
+                        createGrassStrip();
+                        showNotification("Grass regenerated! 🌿");
+                    } else if (strip.dataset.type === 'dirt') {
+                        createDirtStrip();
+                        showNotification("Dirt regenerated! 🟤");
+                    } else if (strip.dataset.type === 'stone') {
+                        createStoneStrip();
+                        showNotification("Stone regenerated! ⚫");
+                    }
+                }, 300);
+            } else {
+                strip.style.animation = 'shake 0.2s';
+                setTimeout(() => strip.style.animation = '', 200);
+            }
+        }
+
+        function createGrassStrip() {
+            const blockGrid = document.getElementById('blockGrid');
+            const grassStrip = document.createElement('div');
+            grassStrip.className = 'ground-strip grass-strip';
+            grassStrip.style.width = '100%';
+            grassStrip.style.bottom = '80px';
+            grassStrip.dataset.type = 'grass';
+            blockGrid.appendChild(grassStrip);
+            
+            grassStrip.addEventListener('click', function(e) {
+                e.stopPropagation();
+                breakGroundStrip(this);
+            });
+        }
+
+        function createDirtStrip() {
+            const blockGrid = document.getElementById('blockGrid');
+            const dirtStrip = document.createElement('div');
+            dirtStrip.className = 'ground-strip dirt-strip';
+            dirtStrip.style.width = '100%';
+            dirtStrip.style.bottom = '40px';
+            dirtStrip.dataset.type = 'dirt';
+            blockGrid.appendChild(dirtStrip);
+            
+            dirtStrip.addEventListener('click', function(e) {
+                e.stopPropagation();
+                breakGroundStrip(this);
+            });
+        }
+
+        function createStoneStrip() {
+            const blockGrid = document.getElementById('blockGrid');
+            const stoneStrip = document.createElement('div');
+            stoneStrip.className = 'ground-strip stone-strip';
+            stoneStrip.style.width = '100%';
+            stoneStrip.style.bottom = '0px';
+            stoneStrip.dataset.type = 'stone';
+            blockGrid.appendChild(stoneStrip);
+            
+            stoneStrip.addEventListener('click', function(e) {
+                e.stopPropagation();
+                breakGroundStrip(this);
+            });
+        }
+
+        function breakPlatform(platform) {
+            if (platform.classList.contains('breaking')) return;
+            
+            if (!platform.dataset.health) {
+                platform.dataset.health = 2;
+            }
+            
+            platform.dataset.health--;
+            platform.style.filter = `brightness(${0.6 + (platform.dataset.health * 0.2)})`;
+            
+            if (platform.dataset.health <= 0) {
+                platform.classList.add('breaking');
+                createStripParticles(platform);
+                
+                setTimeout(() => {
+                    platform.remove();
+                    showNotification("Platform destroyed! 💥");
+                }, 300);
+            } else {
+                platform.style.animation = 'shake 0.2s';
+                setTimeout(() => platform.style.animation = '', 200);
+            }
+        }
+
+        function createStripParticles(strip) {
+            const rect = strip.getBoundingClientRect();
+            const colors = {
+                'grass-strip': '#228B22',
+                'dirt-strip': '#8B4513',
+                'stone-strip': '#808080',
+                'stone-platform': '#808080',
+                'dirt-platform': '#8B4513'
+            };
+            
+            let color = '#8B4513';
+            for (const [key, value] of Object.entries(colors)) {
+                if (strip.classList.contains(key)) {
+                    color = value;
+                    break;
+                }
+            }
+            
+            const particleCount = Math.floor(rect.width / 10);
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = rect.left + Math.random() * rect.width + 'px';
+                particle.style.top = rect.top + Math.random() * rect.height + 'px';
+                particle.style.background = color;
+                particle.style.width = '6px';
+                particle.style.height = '6px';
+                
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 20 + Math.random() * 40;
+                particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+                particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+                
+                document.body.appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 800);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            generateBlocks();
+        });
+
+        
+
+        // Sound effects
+        function playSound(type) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                if (type === 'jump') {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(261.63, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(523.25, audioContext.currentTime + 0.2);
+                    
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                } else if (type === 'powerup') {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1046.50, audioContext.currentTime + 0.3);
+                    
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                }
+            } catch (e) {
+                console.log("Audio not supported");
+            }
+        }
+
+        // Show notification
+        function showNotification(message) {
+            const notificationElement = document.getElementById('notification');
+            notificationElement.textContent = message;
+            notificationElement.style.display = 'block';
+            
+            setTimeout(() => {
+                notificationElement.style.display = 'none';
+            }, 3000);
+        }
+
+        // Project modal system
+        function openProjectModal(projectId) {
+            const modal = document.getElementById('projectModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalContent = document.getElementById('modalContent');
+            
+            if (projectDetails[projectId]) {
+                modalTitle.textContent = projectDetails[projectId].title;
+                modalContent.innerHTML = projectDetails[projectId].content;
+                modal.style.display = 'block';
+                
+                playSound('jump');
+                
+                if (projectId === 2 && isMusicPlaying && !bgm.muted) {
+                    switchToMadsMusic();
+                }
+            }
+        }
+
+        // Close modal
+        document.querySelector('.close').addEventListener('click', function() {
+            document.getElementById('projectModal').style.display = 'none';
+            if (currentMusic === 'mads') {
+                switchToMainMusic();
+            }
+        });
+
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('projectModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+                if (currentMusic === 'mads') {
+                    switchToMainMusic();
+                }
+            }
+        });
+
+        // Typewriter effect for About Me section
+        const textToType = "I'm Passionate about game design, system design, story writing, world building, and project management, with practical experience creating interactive experiences in Unreal Engine and Unity. I enjoy building immersive narratives, designing meaningful gameplay systems, and crafting worlds that feel alive and purposeful. My work combines creativity with structured problem-solving, allowing me to approach projects from both artistic and technical perspectives. I constantly aim to refine my skills, expand my knowledge, and push my ideas further. Driven by long-term goals in game development, I aspire to build a studio dedicated to producing innovative, story-focused games that leave a lasting impact on players.";
+        let charIndex = 0;
+        const typewriterElement = document.getElementById('typewriterText');
+        
+        function typeWriter() {
+            if (charIndex < textToType.length) {
+                typewriterElement.textContent += textToType.charAt(charIndex);
+                charIndex++;
+                setTimeout(typeWriter, 30);
+            }
+        }
+
+        // Smooth scroll to sections
+        function scrollToSection(id) {
+            const section = document.getElementById(id);
+            const isNightMode = document.body.classList.contains('night-mode');
+            
+            if (isNightMode) {
+                section.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.5)';
+                setTimeout(() => {
+                    section.style.boxShadow = '';
+                }, 1000);
+            }
+            
+            section.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+            
+            section.style.animation = 'none';
+            setTimeout(() => {
+                section.style.animation = 'sectionSlideIn 0.6s ease-out';
+            }, 10);
+        }
+
+        // Initialize everything when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            generateBlocks();
+            setTimeout(typeWriter, 500);
+            initMusicPlayer();
+            loadGameStats();
+            
+            let scrollTimeout;
+            window.addEventListener('scroll', function() {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(function() {}, 100);
+            });
+            
+            setTimeout(() => {
+                showNotification("Welcome to my portfolio! Click blocks and characters! 🎮");
+            }, 1000);
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    toggleStatsPopup();
+                }
+            });
+            
+            setInterval(() => {
+                const popup = document.getElementById('gameStatsPopup');
+                if (popup && popup.classList.contains('active')) {
+                    setTimeout(() => {
+                        popup.classList.remove('active');
+                    }, 5000);
+                }
+            }, 100);
+        });
+
+        window.addEventListener('resize', function() {
+            const blockGrid = document.getElementById('blockGrid');
+            if (blockGrid.children.length > 0) {
+                generateBlocks();
+            }
+        });
+
+        // ===== SPACE CLEANER GAME INTEGRATION =====
+        const gameModal = document.getElementById('gameModal');
+        const openGameModalBtn = document.getElementById('openGameModalBtn');
+        const GAME_URL = "https://gx.games/games/p0v448/space-cleaner/";
+
+        openGameModalBtn.addEventListener('click', function() {
+            
+            gameModal.style.display = 'block';
+            showNotification("Opening Space Cleaner... 🚀");
+        });
+
+        function closeGameModal() {
+            playSound('jump');
+            gameModal.style.display = 'none';
+        }
+
+        function openGameInNewTab() {
+            playSound('powerup');
+            
+            const newWindow = window.open(GAME_URL, '_blank', 'noopener,noreferrer');
+            
+            if (newWindow) {
+                newWindow.focus();
+                showNotification("Game opened! Enjoy playing! 🎮");
+                trackGamePlay();
+            } else {
+                showNotification("⚠️ Pop-up blocked! Please allow pop-ups or click the direct link.");
+            }
+            
+            closeGameModal();
+        }
+
+        window.addEventListener('click', function(event) {
+            if (event.target === gameModal) {
+                closeGameModal();
+            }
+        });
+
+        
+
+    </script>
+    
+</body>
+</html>
